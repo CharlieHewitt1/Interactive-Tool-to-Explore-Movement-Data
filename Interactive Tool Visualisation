@@ -1,0 +1,100 @@
+library(leaflet)
+library(rgdal)
+install.packages('leaflet.extras')
+library(leaflet.extras)
+library(rgeos)
+install.packages("geojsonio")
+library(geojsonio)
+library(htmlwidgets)
+
+#2018nocalf
+data1 <- read.csv("2018_no_meancoordinates.csv", header=TRUE, sep=",")
+data1$long <- as.numeric(data1$ï..xstart)
+data1$lat <- as.numeric(data1$ystart)
+data1.SP <- SpatialPointsDataFrame(data1[,c(1,2)], data1[,-c(1,2)])
+
+#2018yescalf 
+data2 <- read.csv("2018_yes_meancoordinates.csv", header=TRUE, sep=",")
+data2$long <- as.numeric(data2$ï..xstart)
+data2$lat <- as.numeric(data2$ystart)
+data2.SP <- SpatialPointsDataFrame(data2[,c(1,2)], data2[,-c(1,2)])
+
+#2017nocalf
+data3 <- read.csv("2017_no_meancoordinates.csv", header=TRUE, sep=",")
+data3$long <- as.numeric(data3$xstart)
+data3$lat <- as.numeric(data3$ystart)
+data3.SP <- SpatialPointsDataFrame(data3[,c(1,2)], data3[,-c(1,2)])
+
+#2017yescalf
+data4 <- read.csv("2017_yes_meancoordinates.csv", header=TRUE, sep=",")
+data4$long <- as.numeric(data4$ï..xstart)
+data4$lat <- as.numeric(data4$ystart)
+data4.SP <- SpatialPointsDataFrame(data4[,c(1,2)], data4[,-c(1,2)])
+
+m = leaflet() %>% addTiles() %>% addFullscreenControl()  %>% setView(24.82200518,70.63408013, zoom = 9) %>%
+  
+  #2018nocalf
+  addCircles(data = data1.SP, lng = ~long, lat = ~lat, popup=~Time, weight = 3, radius=25, 
+             color="blue", stroke = TRUE, fillOpacity = .99, group = '2018 no calf points') %>% 
+  addLegend(data = data1.SP, "bottomright", colors= "blue", labels="2018 no calf",) %>%
+  addScaleBar(position=c("bottomleft")) %>%
+  addHeatmap(data=data1.SP, lng = ~long, lat = ~ lat, minOpacity=.05, max=.125, radius=10, blur=15, group = '2018 no calf density') %>%
+  
+  #2018yescalf
+  addCircles(data = data2.SP, lng = ~long, lat = ~lat, popup=~Time, weight = 3, radius=25, 
+  color="red", stroke = TRUE, fillOpacity = .99, group = '2018 yes calf points') %>% 
+  addLegend(data = data2.SP, "bottomright", colors= "red", labels="2018 yes calf") %>%
+  addScaleBar(position=c("bottomleft")) %>%
+  addHeatmap(data=data2.SP, lng = ~long, lat = ~ lat, minOpacity=.05, max=.125, radius=10, blur=15, group = '2018 yes calf density') %>%
+  
+  #2017nocalf
+  addCircles(data = data3.SP, lng = ~long, lat = ~lat, popup=~Time, weight = 3, radius=25, 
+             color="green", stroke = TRUE, fillOpacity = .99, group = '2017 no calf points') %>% 
+  addLegend(data = data3.SP, "bottomright", colors= "green", labels="2017 no calf") %>%
+  addScaleBar(position=c("bottomleft")) %>%
+  addHeatmap(data=data3.SP, lng = ~long, lat = ~ lat, minOpacity=.05, max=.125, radius=10, blur=15, group = '2017 no calf density') %>%
+  
+  #2017yescalf
+  addCircles(data = data4.SP, lng = ~long, lat = ~lat, popup=~Time, weight = 3, radius=25, 
+             color="purple", stroke = TRUE, fillOpacity = .99, group = '2017 yes calf points') %>% 
+  addLegend(data = data4.SP, "bottomright", colors= "purple", labels="2017 yes calf") %>%
+  addScaleBar(position=c("bottomleft")) %>%
+  addHeatmap(data=data4.SP, lng = ~long, lat = ~ lat, minOpacity=.05, max=.125, radius=10, blur=15, group = '2017 yes calf density') %>%
+  
+  
+  addWMSTiles(
+    "https://openwms.statkart.no/skwms1/wms.topo4",
+    layers = c("topo4_WMS"),
+    options = WMSTileOptions(updateWhenIdle=FALSE, updateWhenZooming = F,
+                             preferCanvas = TRUE,format = "image/png", transparent = T),
+    attribution = c("Kartverket©2019. NINA©2019"),group = 'Topology') %>%
+  addWMSTiles(
+    "https://openwms.statkart.no/skwms1/wms.topo4.graatone",
+    layers = c("topo4graatone_WMS"),
+    options = WMSTileOptions(updateWhenIdle=FALSE, updateWhenZooming = F,
+                             preferCanvas = TRUE,format = "image/png", transparent = T),
+    attribution = c("Kartverket©2019. NINA©2019"),group = 'Topology (grey)')%>%
+  addWMSTiles(
+    "https://openwms.statkart.no/skwms1/wms.toporaster3",
+    layers = c("toporaster"),
+    options = WMSTileOptions(updateWhenIdle=FALSE, updateWhenZooming = F,
+                             preferCanvas = TRUE,format = "image/png", transparent = T),
+    attribution = c("Kartverket©2019. NINA©2019"),group = 'Base Map')%>%
+  addLayersControl(baseGroups = c('Base Map', 'Topology','Topology (grey)'), 
+                   overlayGroups= c('2018 no calf points', '2018 yes calf points', '2017 no calf points', '2017 yes calf points', 
+                                    '2018 no calf density','2018 yes calf density', '2017 no calf density', '2017 yes calf density'),
+                   options = layersControlOptions(collapsed = FALSE),
+                   position = 'topright') %>%
+  hideGroup('2018 yes calf points')%>%
+  hideGroup('2017 no calf points')%>%
+  hideGroup('2017 yes calf points')%>%
+  hideGroup('2018 yes calf density')%>%
+  hideGroup('2017 no calf density')%>%
+  hideGroup('2017 yes calf density')
+
+
+m
+
+
+
+saveWidget(m, file="meanreinmovementsravdolsiida.html")
